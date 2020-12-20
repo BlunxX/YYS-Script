@@ -15,8 +15,8 @@ cur_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
 par_dir = os.path.split(os.path.abspath(cur_dir))[0]
 sys.path.append(par_dir)
 
-from config import yys_config
-from screenshot import yys_screenshot
+from config import YysConfig
+from screenshot import YysScreenshot
 
 
 class ImageCallback():
@@ -35,13 +35,52 @@ class Autogui(QThread):
         self.win_name = win_name
         self.window = Yys_windows_GUI(self.win_name)
         self.auto_type = ''  # 当前执行的脚本类型
-        self.config = yys_config  # 获取配置
-        self.screenshot = yys_screenshot  # 获取截图信息
+        self.init_config()  # 获取配置
+        self.init_screenshot()  # 获取截图信息
         self.prepare_image_callback = []  # ImageCallback
         self.loop_image_callback = []  # ImageCallback
         self.stop = False  # 是否停止脚本
         self.cur_key = ''  # 当前匹配的key，用来输出日志
         self.cur_loop_times = 0  # 当前循环数
+
+    def init_config(self):
+        yys_config = YysConfig(name='yys_config')
+        self.config = yys_config
+        general_keys = [
+            ('title', 'str', 'x笑cry-辅助工具'),
+            ('version', 'str', 'v1.0.0'),
+            ('gitpath', 'str', '无'),
+        ]
+        yuling_keys = [
+            ('loop_times', 'int', 200),
+            ('type', 'str', 'dragon'),
+            ('layer', 'int', 3),
+            ('attention', 'str', ''),
+        ]
+        yuhun_keys = [
+            ('loop_times', 'int', 200),
+            ('players', 'int', 2),
+            ('may_fail', 'bool', True),
+            ('captain', 'bool', True),
+            ('attention', 'str', ''),
+        ]
+
+        wangzhe_keys = [
+            ('loop_times', 'int', 50),
+            ('attention', 'str', ''),
+        ]
+
+        yys_config.read_one_type_config('general', general_keys)
+        # print(getattr(yys_config, 'general'))
+        yys_config.read_one_type_config('yuling', yuling_keys)
+        # print(getattr(yys_config, 'yuling'))
+        yys_config.read_one_type_config('yuhun', yuhun_keys)
+        # print(getattr(yys_config, 'yuhun'))
+        yys_config.read_one_type_config('wangzhe', wangzhe_keys)
+        # print(getattr(yys_config, 'wangzhe'))
+
+    def init_screenshot(self):
+        self.screenshot = YysScreenshot('')
 
     def already_in_loop(self, im_yys):
         if len(self.prepare_image_callback) == 0:
@@ -294,8 +333,8 @@ class Autogui(QThread):
             callback(loc)
 
     def void_callback(self, loc):
-        self.display_msg('空操作：{0}，等待2S'.format(self.cur_key))
-        time.sleep(2)
+        self.display_msg('空操作：{0}，等待1S'.format(self.cur_key))
+        time.sleep(1)
 
     def prepare_callback(self, loc):
         self.click_loc_one_and_move_uncover(loc)

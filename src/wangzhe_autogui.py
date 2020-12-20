@@ -35,7 +35,7 @@ class Wangzhe(Autogui):
             ('loding', self.void_callback),
             ('skip', self.click_loc_one_and_move_uncover),
             ('skip2', self.click_loc_one_and_move_uncover),
-            ('auto', self.void_callback),
+            # ('auto', self.void_callback),
             ('waiting', self.void_callback),
             ('continue', self.click_loc_one_and_move_uncover),
             ('fight_again', self.fight_again_callback),  # +金币上限

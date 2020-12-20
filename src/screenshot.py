@@ -95,9 +95,6 @@ class YysScreenshot(Screenshot):
         return images
 
 
-yys_screenshot = YysScreenshot('')
-
-
 if __name__ == '__main__':
     # screenshot = Screenshot()
     # if screenshot.is_path_exists():

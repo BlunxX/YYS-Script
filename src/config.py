@@ -114,40 +114,6 @@ class YysConfig(Config):
             return None
 
 
-yys_config = YysConfig(name='yys_config')
-general_keys = [
-    ('title', 'str', 'x笑cry-辅助工具'),
-    ('version', 'str', 'v1.0.0'),
-    ('gitpath', 'str', '无'),
-]
-yuling_keys = [
-    ('loop_times', 'int', 200),
-    ('type', 'str', 'dragon'),
-    ('layer', 'int', 3),
-    ('attention', 'str', ''),
-]
-yuhun_keys = [
-    ('loop_times', 'int', 200),
-    ('players', 'int', 2),
-    ('may_fail', 'bool', True),
-    ('captain', 'bool', True),
-    ('attention', 'str', ''),
-]
-
-wangzhe_keys = [
-    ('loop_times', 'int', 50),
-    ('attention', 'str', ''),
-]
-
-yys_config.read_one_type_config('general', general_keys)
-# print(getattr(yys_config, 'general'))
-yys_config.read_one_type_config('yuling', yuling_keys)
-# print(getattr(yys_config, 'yuling'))
-yys_config.read_one_type_config('yuhun', yuhun_keys)
-# print(getattr(yys_config, 'yuhun'))
-yys_config.read_one_type_config('wangzhe', wangzhe_keys)
-# print(getattr(yys_config, 'wangzhe'))
-
 if __name__ == '__main__':
     yys_config = YysConfig(name='yys_config')
     print(yys_config.is_parser_created())
