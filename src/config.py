@@ -63,6 +63,9 @@ class Config:
             print('获取{0},{1}失败, {2}'.format(section, option, str(error)))
             return default
 
+    def set_current_setion(self, section):
+        self.cur_config = getattr(self, section)
+
     def read_one_type_config(self, read_type: str, read_keys: (str, str, str)):
         '''read_keys的三个位置分别代表： key, type, default_value'''
 
@@ -111,31 +114,39 @@ class YysConfig(Config):
             return None
 
 
-config = YysConfig(name='yys_config')
+yys_config = YysConfig(name='yys_config')
 general_keys = [
     ('title', 'str', 'x笑cry-辅助工具'),
     ('version', 'str', 'v1.0.0'),
     ('gitpath', 'str', '无'),
 ]
 yuling_keys = [
-    ('times', 'int', 200),
-    ('type', 'int', 2),
-    ('layer', 'int', 2),
+    ('loop_times', 'int', 200),
+    ('type', 'str', 'dragon'),
+    ('layer', 'int', 3),
+    ('attention', 'str', ''),
 ]
 yuhun_keys = [
-    ('times', 'int', 200),
+    ('loop_times', 'int', 200),
     ('players', 'int', 2),
     ('may_fail', 'bool', True),
     ('captain', 'bool', True),
     ('attention', 'str', ''),
 ]
 
-config.read_one_type_config('general', general_keys)
-print(getattr(config, 'general'))
-config.read_one_type_config('yuling', yuling_keys)
-print(getattr(config, 'yuling'))
-config.read_one_type_config('yuhun', yuhun_keys)
-print(getattr(config, 'yuhun'))
+wangzhe_keys = [
+    ('loop_times', 'int', 50),
+    ('attention', 'str', ''),
+]
+
+yys_config.read_one_type_config('general', general_keys)
+# print(getattr(yys_config, 'general'))
+yys_config.read_one_type_config('yuling', yuling_keys)
+# print(getattr(yys_config, 'yuling'))
+yys_config.read_one_type_config('yuhun', yuhun_keys)
+# print(getattr(yys_config, 'yuhun'))
+yys_config.read_one_type_config('wangzhe', wangzhe_keys)
+# print(getattr(yys_config, 'wangzhe'))
 
 if __name__ == '__main__':
     yys_config = YysConfig(name='yys_config')
