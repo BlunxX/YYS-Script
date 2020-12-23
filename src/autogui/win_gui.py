@@ -6,6 +6,16 @@ import win32con
 import logging
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 
+# def get_all_windows(win_name):
+#     def print_window(hwnd, extra):
+#         if win_name in win32gui.GetWindowText(hwnd):
+#             print(win32gui.GetClassName(hwnd), win32gui.GetWindowText(hwnd))
+
+#     win32gui.EnumWindows(print_window, None)
+
+# win_name = '阴阳师-网易游戏'
+# get_all_windows(win_name)
+
 
 class Yys_GUI(QThread):
     # 定义类属性为信号函数
@@ -13,7 +23,7 @@ class Yys_GUI(QThread):
 
     def __init__(self, win_name='阴阳师-网易游戏'):
         self.win_name = win_name
-        super(Yys_GUI, self).__init__(None)     # 需要初始化，否则会报异常
+        super(Yys_GUI, self).__init__(None)  # 需要初始化，否则会报异常
 
     def get_window_handle(self):
         pass
@@ -42,6 +52,7 @@ class Yys_windows_GUI(Yys_GUI):
         self.handler = None
         self.x_top = self.y_top = self.x_bottom = self.y_bottom = 0
         self.win_width = self.win_height = 0
+        self.windows = []  # 过滤出来的窗体
 
     def get_window_handler(self):
         '''获取到阴阳师窗体信息'''
@@ -80,3 +91,7 @@ class Yys_windows_GUI(Yys_GUI):
             self.raise_msg('请确认你拥有管理员权限，否则无法重新设置大小，msg:{0}'.format(error))
             return False
         return True
+
+
+if __name__ == '__main__':
+    pass

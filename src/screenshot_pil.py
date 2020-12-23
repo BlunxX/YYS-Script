@@ -5,9 +5,6 @@
 import os
 import sys
 from PIL import Image
-import cv2
-import numpy as np
-from matplotlib import pyplot as plt
 
 # %% 取出图片对应的截图文件，文件的目录结构
 cur_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
@@ -20,85 +17,6 @@ IMAGES_PATH = os.path.join(cur_dir, 'screenshot')
     图片1.jpg
     图片2.jpg
 '''
-
-
-def pil2cv(image, transform=cv2.COLOR_BGR2GRAY):
-    ''' PIL型 -> OpenCV型
-    cv2.COLOR_BGR2GRAY 将BGR格式转换成灰度图片
-    cv2.COLOR_BGR2RGB 将BGR格式转换成RGB格式 '''
-    new_image = np.array(image, dtype=np.uint8)
-    if new_image.ndim == 2:
-        pass
-    elif new_image.shape[2] == 3:
-        new_image = cv2.cvtColor(new_image, transform)
-    elif new_image.shape[2] == 4:
-        new_image = cv2.cvtColor(new_image, transform)
-    return new_image
-
-
-def cv2pil(image, transform=cv2.COLOR_BGR2GRAY):
-    ''' OpenCV型 -> PIL型
-    cv2.COLOR_BGR2GRAY 将BGR格式转换成灰度图片
-    cv2.COLOR_BGR2RGB 将BGR格式转换成RGB格式 '''
-    new_image = image.copy()
-    if new_image.ndim == 2:
-        pass
-    elif new_image.shape[2] == 3:
-        new_image = cv2.cvtColor(new_image, transform)
-    elif new_image.shape[2] == 4:
-        new_image = cv2.cvtColor(new_image, transform)
-    new_image = Image.fromarray(new_image)
-    return new_image
-
-
-class Location:
-    def __init__(self, x, y, w, h):
-        self.left = x
-        self.top = y
-        self.width = w
-        self.height = h
-
-
-def locate_im_by_cv2(template, target_rgb_gray, confidence=0.8,
-                     multi_loc=False):
-    h, w = template.shape[0], template.shape[1]
-    res = cv2.matchTemplate(target_rgb_gray, template, cv2.TM_CCOEFF_NORMED)
-    loc = np.where(res >= confidence)
-
-    locations = []
-    for pt in zip(*loc[::-1]):  # zip(*loc[::-1]) 等价于 zip(loc[1], loc[0])
-        # cv2.rectangle(target_rgb_gray, pt, (pt[0] + w, pt[1] + h), (0, 0, 255),
-        #               2)
-        if multi_loc is False:
-            return Location(pt[0], pt[1], w, h)
-        locations.append(Location(pt[0], pt[1], w, h))
-
-    if len(locations) > 0:
-        return locations
-    else:
-        return None
-
-
-def locate_image_pil2pil(template: Image, target: Image, confidence=0.8):
-    return locate_im_by_cv2(pil2cv(template), pil2cv(target), confidence)
-
-
-def locate_image_cv2pil(template: np.ndarray, target: Image, confidence=0.8):
-    return locate_im_by_cv2(template, pil2cv(target), confidence)
-
-
-def locate_image_cv2cv(template: np.ndarray, target: np.ndarray, confidence=0.8):
-    return locate_im_by_cv2(template, pil2cv(target), confidence)
-
-
-def show_cv2_image(img: np.ndarray):
-    cv2.imshow('显示图片', img)
-    cv2.waitKey(0) & 0xFF
-    cv2.destroyAllWindows()
-
-
-def show_pil_image(img: Image):
-    img.show()
 
 
 class Screenshot:
@@ -116,9 +34,9 @@ class Screenshot:
     def is_path_exists(self):
         return self.path_exists
 
-    def open_image_file(self, image_path) -> np.ndarray:
+    def open_image_file(self, image_path) -> Image:
         try:
-            return cv2.imread(image_path, 0)  # 直接读取灰度后的图片
+            return Image.open(image_path)
         except Exception as error:
             print('打开图片失败，{0}, msg:{1}'.format(image_path, error))
             return None
@@ -177,10 +95,6 @@ class YysScreenshot(Screenshot):
         return images
 
 
-# 指定匹配用的接口
-locate = locate_image_cv2pil
-
-
 if __name__ == '__main__':
     # screenshot = Screenshot()
     # if screenshot.is_path_exists():
@@ -197,4 +111,4 @@ if __name__ == '__main__':
     screenshot = YysScreenshot('yeyuanhuo')
     jpgs = screenshot.get_jpgs(['absent', 'chi'])
     images = [x[1] for x in jpgs.items()]
-    print(images)
+    print(None in images)

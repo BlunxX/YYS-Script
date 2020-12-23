@@ -15,8 +15,9 @@ cur_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
 par_dir = os.path.split(os.path.abspath(cur_dir))[0]
 sys.path.append(par_dir)
 
+# 使用opencv的图片匹配函数，如果不想用opencv可以使用 screenshot_pil.py 脚本
 from config import YysConfig
-from screenshot import YysScreenshot
+from screenshot import YysScreenshot, locate
 
 
 class ImageCallback():
@@ -50,11 +51,19 @@ class Autogui(QThread):
             ('title', 'str', 'x笑cry-辅助工具'),
             ('version', 'str', 'v1.0.0'),
             ('gitpath', 'str', '无'),
+            ('attention', 'str', '无'),
+            ('drag_dis', 'int', 8),  # 狗粮拖动距离
+            ('width', 'int', 8),
+            ('height', 'int', 8),
         ]
         yuling_keys = [
             ('loop_times', 'int', 200),
             ('type', 'str', 'dragon'),
             ('layer', 'int', 3),
+            ('attention', 'str', ''),
+        ]
+        break_keys = [
+            ('loop_times', 'int', 200),
             ('attention', 'str', ''),
         ]
         yuhun_keys = [
@@ -74,6 +83,8 @@ class Autogui(QThread):
         # print(getattr(yys_config, 'general'))
         yys_config.read_one_type_config('yuling', yuling_keys)
         # print(getattr(yys_config, 'yuling'))
+        yys_config.read_one_type_config('yys_break', break_keys)
+        # print(getattr(yys_config, 'break'))
         yys_config.read_one_type_config('yuhun', yuhun_keys)
         # print(getattr(yys_config, 'yuhun'))
         yys_config.read_one_type_config('wangzhe', wangzhe_keys)
@@ -93,12 +104,13 @@ class Autogui(QThread):
             if self.locate_im(callback.image, im_yys):
                 self.display_msg('匹配{0}，可以进入循环'.format(callback.key))
                 return True
-
+        self.display_msg(self.cur_key + ': 当前状态还不能进入到可循环状态')
         return False
 
     def run(self, auto_type: str):
         self.auto_type = auto_type
-        if self.resize_window_size(1152, 679) is False:
+        if self.resize_window_size(self.config.general['width'],
+                                   self.config.general['height']) is False:
             self.display_msg('调整窗体大小失败')
             return
         self.display_msg('正在尝试进入循环')
@@ -122,7 +134,9 @@ class Autogui(QThread):
                 self.cur_loop_times += 1
                 loc = self.locate_im(callback.image, im_yys)
                 if loc is None:
+                    print(callback.key, ' not match')
                     continue
+                self.cur_key = callback.key
                 callback.callback(loc)  # 执行对应的回调
                 time.sleep(1)
                 found = True
@@ -213,17 +227,17 @@ class Autogui(QThread):
                 im_yys = self.screenshot_exact()
             else:
                 im_yys = basic_im
-            loc = pyautogui.locate(check_im, im_yys, confidence=confidence)
+            loc = locate(check_im, im_yys, confidence=confidence)
             return loc
         except Exception as error:
             self.display_msg('截图比对失败：' + str(error))
             return None
 
-    def locate_im_exact(self, check_im, x, y, w, h):
+    def locate_im_exact(self, check_im, x, y, w, h, confidence=0.8):
         '''通过坐标来获取截图并查看图片是否存在'''
         try:
             im_yys = self.screenshot_exact(x, y, w, h)
-            loc = pyautogui.locate(check_im, im_yys, confidence=confidence)
+            loc = locate(check_im, im_yys, confidence=confidence)
             return loc
         except Exception as error:
             self.display_msg('截图比对失败：' + str(error))
@@ -336,16 +350,36 @@ class Autogui(QThread):
         self.display_msg('空操作：{0}，等待1S'.format(self.cur_key))
         time.sleep(1)
 
+    def task_accept_callback(self, loc):
+        im_yys = self.screenshot_exact()
+        loc_tmp = self.locate_im(self.get_image('accept'), im_yys)
+        if loc_tmp:
+            self.click_loc_one(loc_tmp)
+            return
+
     def prepare_callback(self, loc):
         self.click_loc_one_and_move_uncover(loc)
         time.sleep(1)
         self.click_success_check('prepare', self.prepare_callback)
 
     def click_loc_one_when_award(self):
-        random_dis = randint(-10, 10)
-        last_x = self.window.x_top + 955 + random_dis
-        last_y = self.window.y_top + 530 + random_dis
-        self.click_loc_exact(last_x, last_y, 2, 0.2)  # 点击两下显示更快
+        im_yys = self.screenshot_exact()
+        loc_tmp = self.locate_im(self.get_image('victory'), im_yys)
+        if loc_tmp:
+            self.click_loc_twice(loc_tmp)
+            return
+        loc_tmp = self.locate_im(self.get_image('award'), im_yys)
+        if loc_tmp:
+            self.click_loc_twice(loc_tmp)
+            return
+        loc_tmp = self.locate_im(self.get_image('fail'), im_yys)
+        if loc_tmp:
+            self.click_loc_twice(loc_tmp)
+            return
+        loc_tmp = self.locate_im(self.get_image('continue'), im_yys)
+        if loc_tmp:
+            self.click_loc_twice(loc_tmp)
+            return
 
     def victory_callback(self, loc):
         self.display_msg('当前进度：{0}/{1}'.format(self.cur_loop_times + 1,
@@ -362,7 +396,7 @@ class Autogui(QThread):
 
     def award_callback(self, loc):
         self.click_loc_one_when_award()
-        time.sleep(0.5)
+        time.sleep(1)
         self.click_success_check('award', self.award_callback)
 
     def fight_callback(self, loc):
