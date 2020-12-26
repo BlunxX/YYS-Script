@@ -59,7 +59,7 @@ class Location:
         self.height = h
 
 
-def locate_im_by_cv2(template, target_rgb_gray, confidence=0.8,
+def locate_im_cv2cv(template, target_rgb_gray, confidence=0.8,
                      multi_loc=False):
     h, w = template.shape[0], template.shape[1]
     res = cv2.matchTemplate(target_rgb_gray, template, cv2.TM_CCOEFF_NORMED)
@@ -78,17 +78,21 @@ def locate_im_by_cv2(template, target_rgb_gray, confidence=0.8,
     else:
         return None
 
+def locate_im_cv2pil(template, target, confidence=0.8,
+                     multi_loc=False):
+    return locate_im_cv2cv(template, pil2cv(target), confidence, multi_loc)
+
 
 def locate_image_pil2pil(template: Image, target: Image, confidence=0.8):
-    return locate_im_by_cv2(pil2cv(template), pil2cv(target), confidence)
+    return locate_im_cv2cv(pil2cv(template), pil2cv(target), confidence)
 
 
 def locate_image_cv2pil(template: np.ndarray, target: Image, confidence=0.8):
-    return locate_im_by_cv2(template, pil2cv(target), confidence)
+    return locate_im_cv2cv(template, pil2cv(target), confidence)
 
 
 def locate_image_cv2cv(template: np.ndarray, target: np.ndarray, confidence=0.8):
-    return locate_im_by_cv2(template, pil2cv(target), confidence)
+    return locate_im_cv2cv(template, pil2cv(target), confidence)
 
 
 def show_cv2_image(img: np.ndarray):
@@ -175,10 +179,6 @@ class YysScreenshot(Screenshot):
         for key in keys:
             images[key] = self.get_jpg(key)
         return images
-
-
-# 指定匹配用的接口
-locate = locate_image_cv2pil
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ class Yuling(Autogui):
         self.config.set_current_setion('yuling')  # 设置当前配置信息
         self.pre_loop_times = self.config.cur_config.get('pre_loop_times', 20)
         self.loop_times = self.config.cur_config.get('loop_times', 20)
-        self.fight_type = self.config.cur_config.get('type', 'fox')
+        self.fight_type = self.config.cur_config.get('type', 'leopard')
         self.already_select_layer = False
 
         prepare_callback = [

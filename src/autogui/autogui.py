@@ -17,7 +17,10 @@ sys.path.append(par_dir)
 
 # 使用opencv的图片匹配函数，如果不想用opencv可以使用 screenshot_pil.py 脚本
 from config import YysConfig
-from screenshot import YysScreenshot, locate
+import screenshot
+
+locate = screenshot.locate_image_cv2pil
+YysScreenshot = screenshot.YysScreenshot
 
 
 class ImageCallback():
@@ -43,6 +46,7 @@ class Autogui(QThread):
         self.stop = False  # 是否停止脚本
         self.cur_key = ''  # 当前匹配的key，用来输出日志
         self.cur_loop_times = 0  # 当前循环数
+        self.last_key = ''  # 上一次循环的key，用来检测死循环
 
     def init_config(self):
         yys_config = YysConfig(name='yys_config')
@@ -66,10 +70,16 @@ class Autogui(QThread):
             ('loop_times', 'int', 200),
             ('attention', 'str', ''),
         ]
+        chapter_keys = [
+            ('loop_times', 'int', 200),
+            ('players', 'int', 2),
+            ('captain', 'bool', True),
+            ('attention', 'str', ''),
+        ]
+
         yuhun_keys = [
             ('loop_times', 'int', 200),
             ('players', 'int', 2),
-            ('may_fail', 'bool', True),
             ('captain', 'bool', True),
             ('attention', 'str', ''),
         ]
@@ -85,8 +95,10 @@ class Autogui(QThread):
         # print(getattr(yys_config, 'yuling'))
         yys_config.read_one_type_config('yys_break', break_keys)
         # print(getattr(yys_config, 'break'))
-        yys_config.read_one_type_config('yuhun', yuhun_keys)
-        # print(getattr(yys_config, 'yuhun'))
+        yys_config.read_one_type_config('chapter', yuhun_keys)
+        # print(getattr(yys_config, 'chapter'))
+        yys_config.read_one_type_config('yuhun', chapter_keys)
+        # print(getattr(yys_config, 'chapter'))
         yys_config.read_one_type_config('wangzhe', wangzhe_keys)
         # print(getattr(yys_config, 'wangzhe'))
 
@@ -238,6 +250,7 @@ class Autogui(QThread):
         try:
             im_yys = self.screenshot_exact(x, y, w, h)
             loc = locate(check_im, im_yys, confidence=confidence)
+            # im_yys.show()
             return loc
         except Exception as error:
             self.display_msg('截图比对失败：' + str(error))
@@ -266,6 +279,18 @@ class Autogui(QThread):
         click_y = self.window.y_top + loc.top + random_y
         self.click_loc_exact(click_x, click_y, times, interval)
 
+    def check_bad_loop(self, key):
+        if key != self.last_key:
+            self.last_key = key
+            self.last_key_loop_times = 1
+        else:
+            self.last_key_loop_times += 1
+            if self.last_key_loop_times > 50:
+                self.display_msg('可能触发了死循环：{0}'.format(self.last_key))
+            elif self.last_key_loop_times % 10 == 0:
+                self.display_msg('{0}循环了{1}次'.format(self.last_key,
+                                                     self.last_key_loop_times))
+
     def click_loc_exact(self, click_x, click_y, times=-1, interval=0.5):
         if times == -1:
             times = randint(2, 3)
@@ -276,6 +301,7 @@ class Autogui(QThread):
             click_x, click_y, interval, times))
         pyautogui.click(click_x, click_y, times, interval, button='left')
         self.display_msg('点击：{0}进入下一步'.format(self.cur_key))
+        self.check_bad_loop(self.cur_key)
 
     def click_loc_inc(self, inc_x, inc_y, times=-1, interval=0.5):
         return self.click_loc_exact(self.window.x_top + inc_x,
@@ -340,11 +366,14 @@ class Autogui(QThread):
         self.display_msg('拖动鼠标幅度：{0}, {1}'.format(x_offset, y_offset))
         pyautogui.dragRel(x_offset, y_offset, duration=du)
 
-    def click_success_check(self, key, callback):
+    def click_success_check(self, key, callback, *args):
         im_yys = self.screenshot_exact()
         loc = self.locate_im(self.get_image(key), im_yys)
         if loc:
-            callback(loc)
+            if len(args) == 0:
+                callback(loc)
+            else:
+                callback(loc, args)
 
     def void_callback(self, loc):
         self.display_msg('空操作：{0}，等待1S'.format(self.cur_key))
@@ -396,103 +425,23 @@ class Autogui(QThread):
 
     def award_callback(self, loc):
         self.click_loc_one_when_award()
-        time.sleep(1)
+        time.sleep(2)
         self.click_success_check('award', self.award_callback)
 
     def fight_callback(self, loc):
         pass
 
-    def is_loc_marked_exact(self, x, y, w, h):
-        return self.locate_im_exact(self.ims['marked'], x, y, w, h) is not None
+    def is_inc_box_has_key(self, key, x, y, w, h):
+        return self.locate_im_inc(self.get_image(key), x, y, w, h) is not None
 
-    def is_loc_marked_inc(self, x, y, w, h):
-        return self.locate_im_inc(self.ims['marked'], x, y, w, h) is not None
-
-    def is_loc_man_exact(self, x, y, w, h):
-        return self.locate_im_exact(self.ims['man'], x, y, w, h) is not None
-
-    def is_loc_man_inc(self, x, y, w, h):
-        return self.locate_im_inc(self.ims['man'], x, y, w, h) is not None
-
-    def exchange_man_role_by_locs(self, role_locs, final_locs):
-        ''' @function: 通过式神的相对位置和最终位置，将已经满级位置的式神更换为狗粮
-            @role_locs: 需要检测的式神的相对位置[[x,y,w,h]]
-            @final_locs: 要更换的狗粮的位置，即从哪个位置换一个狗粮上来，不同界面位置不同
-            @注意事项：目前最多仅支持同时更换3只狗粮
-        '''
-        result = [0, 0, 0, 0, 0]
-        for i in range(len(role_locs)):
-            if self.is_loc_man_inc(role_locs[i][0], role_locs[i][1],
-                                   role_locs[i][2], role_locs[i][3]):
-                result[i] = 2
-
-        self.display_msg('交换状态：{0}'.format(result))
-
-        # 不存在满级式神时直接返回
-        if 2 not in result:
-            return result
-
-        select_type = self.config.get('select_type', 'fodder')
-        if select_type in ['ncard', 'fodder']:
-            self.change_type(select_type)  # 切换到具体狗粮
-            loc = self.locate_im(self.ims['move'])
-            if loc:
-
-                self.move_loc_inc(loc.left + 5, loc.top + 12)
-                time.sleep(0.2)
-                dis = randint(15, 30) / 10.0 + self.fodder_drag_dis
-                self.last_dis = dis if self.last_dis != dis else dis + 1
-                self.display_msg('拖动一段距离以获取更优的狗粮：{0},{1}'.format(
-                    select_type, self.last_dis))
-                self.dragRel_loc_exact(self.last_dis, 0, 0.5)  #
-                time.sleep(0.5)
-
-        # 从狗粮列表的哪几个位置进行更换狗粮，因为不同界面，最终要换到的位置也不太一样
-        exchange_locs = [[180, 440, 190, 205], [380, 440, 190, 205],
-                         [640, 440, 190, 205]]
-        for i in range(len(final_locs)):
-            if result[i] != 2:
-                continue
-            loc_flower = self.locate_im_inc(self.ims['flower'],
-                                            exchange_locs[i][0],
-                                            exchange_locs[i][1],
-                                            exchange_locs[i][2],
-                                            exchange_locs[i][3])
-            if loc_flower:
-                start_x = exchange_locs[i][0] + loc_flower.left - 30
-                start_y = exchange_locs[i][1] + loc_flower.top + 50
-                self.move_loc_inc(start_x, start_y, 0.2)
-                time.sleep(0.2)
-
-                # 用最终位置减去最初的位置即可
-                self.dragRel_loc_exact(final_locs[i][0] - start_x,
-                                       final_locs[i][1] - start_y,
-                                       0.8 + 0.4 * i)
-                time.sleep(0.8 + 0.4 * i)
-            else:
-                self.display_msg('没有找到合适的狗粮：{0}'.format(i))
-
-        return result
-
-    def change_type(self, select_type):
-        types = [
-            'all',
-            'fodder',
-            'ncard',
-        ]
-        types.remove(select_type)  # 去除是因为如果跟选择类型一致，就不用再切换
-        im_yys = self.screenshot_exact()
-        for cur_type in types:
-            # 点击任意一种匹配的类型，并点击进入切换界面
-            loc = self.locate_im(self.ims[cur_type], im_yys)
-            if loc is None:
-                continue
-            self.click_loc_one(loc)
-            time.sleep(0.5)
-
-            # 再选择对应需要选中的类型
-            loc_tmp = self.locate_im(self.ims[select_type])
-            if loc_tmp:
-                self.display_msg('切换类型：{0}'.format(select_type))
-                self.click_loc_one(loc_tmp)
-                time.sleep(0.5)
+    def get_all_images(self, key, im_yys=None, confidence=0.8):
+        if im_yys is None:
+            im_yys = self.screenshot_exact()
+        locs = screenshot.locate_im_cv2pil(self.get_image(key),
+                                           im_yys,
+                                           confidence,
+                                           multi_loc=True)
+        if locs is None:
+            return 0
+        else:
+            return locs
