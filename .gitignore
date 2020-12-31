@@ -1,4 +1,12 @@
-src/__pycache__/config.cpython-37.pyc
-src/autogui/__pycache__/autogui.cpython-37.pyc
-src/__pycache__/screenshot.cpython-37.pyc
-src/autogui/__pycache__/win_gui.cpython-37.pyc
+src/__pycache__/
+src/autogui/__pycache__/
+src/screenshot/__pycache__/
+src/tools/__pycache__/
+src/ui/__pycache__/
+build/
+dist/
+src/new_tools.exe
+
+.gitignore
+
+

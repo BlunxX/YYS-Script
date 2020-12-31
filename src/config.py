@@ -64,11 +64,15 @@ class Config:
             return default
 
     def set_current_setion(self, section):
-        self.cur_config = getattr(self, section)
+        try:
+            conf = getattr(self, section)
+        except Exception:
+            print('获取section:{0}失败'.formaot(section))
+        finally:
+            self.cur_config = conf if conf else getattr(self, 'general')
 
     def read_one_type_config(self, read_type: str, read_keys: (str, str, str)):
         '''read_keys的三个位置分别代表： key, type, default_value'''
-
         if hasattr(self, read_type):
             print('{0}类型已经读取过一次了，请求检查配置文件并进行合并'.format(read_type))
             return

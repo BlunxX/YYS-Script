@@ -83,6 +83,20 @@ class Wangzhe(Autogui):
         self.move_uncover_to_right(loc)
         time.sleep(0.8)
 
+    def run(self, auto_type: str):
+        # 腾讯手游助手不能自动调整大小： 453 308 936 584
+        self.auto_type = auto_type
+        if self.get_window_handler() is False:
+            self.display_msg('获取窗体大小失败')
+            return
+        self.display_msg('正在尝试进入循环')
+        if self.goto_loop() is False:
+            self.display_msg('无法进入循环')
+            return
+        self.display_msg('成功进入循环脚本')
+        self.display_msg(str(self.config.cur_config))  # 打印配置信息
+        self.loop()
+
 
 if __name__ == '__main__':
     autogui = Wangzhe()

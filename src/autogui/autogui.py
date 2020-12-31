@@ -13,6 +13,7 @@ from random import randint, uniform
 # 将上一层目录添加到系统目录
 cur_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
 par_dir = os.path.split(os.path.abspath(cur_dir))[0]
+sys.path.append(cur_dir)  # 打包时会放在同一个目录下，所以如果是加父的目录是不行的
 sys.path.append(par_dir)
 
 # 使用opencv的图片匹配函数，如果不想用opencv可以使用 screenshot_pil.py 脚本
@@ -34,11 +35,12 @@ class Autogui(QThread):
     # 定义类属性为信号函数
     sendmsg = pyqtSignal(str, str)  # type, msg
 
-    def __init__(self, win_name='阴阳师-网易游戏'):
+    def __init__(self, win_name='阴阳师-网易游戏', yys_config=None):
         super(Autogui, self).__init__(None)  # 初始化信号和槽的初始化
         self.win_name = win_name
         self.window = Yys_windows_GUI(self.win_name)
         self.auto_type = ''  # 当前执行的脚本类型
+        self.config = yys_config
         self.init_config()  # 获取配置
         self.init_screenshot()  # 获取截图信息
         self.prepare_image_callback = []  # ImageCallback
@@ -49,6 +51,11 @@ class Autogui(QThread):
         self.last_key = ''  # 上一次循环的key，用来检测死循环
 
     def init_config(self):
+        if self.config is not None:
+            self.display_msg('参数已经初始化完成')
+            self.display_msg(str(self.config))
+            return
+
         yys_config = YysConfig(name='yys_config')
         self.config = yys_config
         general_keys = [
@@ -72,8 +79,10 @@ class Autogui(QThread):
         ]
         chapter_keys = [
             ('loop_times', 'int', 200),
-            ('players', 'int', 2),
+            ('players', 'int', 1),
             ('captain', 'bool', True),
+            ('fodder_type', 'str', 'fodder'),
+            ('drag', 'int', 3),
             ('attention', 'str', ''),
         ]
 
@@ -89,16 +98,34 @@ class Autogui(QThread):
             ('attention', 'str', ''),
         ]
 
+        upgrade_keys = [
+            ('loop_times', 'int', 50),
+            ('upgrade_stars', 'int', 2),
+            ('attention', 'str', ''),
+        ]
+
+        yeyuanhuo_keys = [
+            ('loop_times', 'int', 100),
+            ('fodder_type', 'str', 'fodder'),
+            ('drag', 'int', 5),
+            ('attention', 'str', ''),
+            ('change_fodder', 'bool', True),
+        ]
+
         yys_config.read_one_type_config('general', general_keys)
         # print(getattr(yys_config, 'general'))
         yys_config.read_one_type_config('yuling', yuling_keys)
         # print(getattr(yys_config, 'yuling'))
         yys_config.read_one_type_config('yys_break', break_keys)
-        # print(getattr(yys_config, 'break'))
-        yys_config.read_one_type_config('chapter', yuhun_keys)
+        # print(getattr(yys_config, 'yys_break'))
+        yys_config.read_one_type_config('chapter', chapter_keys)
         # print(getattr(yys_config, 'chapter'))
-        yys_config.read_one_type_config('yuhun', chapter_keys)
-        # print(getattr(yys_config, 'chapter'))
+        yys_config.read_one_type_config('yuhun', yuhun_keys)
+        # print(getattr(yys_config, 'yuhun'))
+        yys_config.read_one_type_config('upgrade', upgrade_keys)
+        # print(getattr(yys_config, 'upgrade'))
+        yys_config.read_one_type_config('yeyuanhuo', yeyuanhuo_keys)
+        # print(getattr(yys_config, 'yeyuanhuo'))
         yys_config.read_one_type_config('wangzhe', wangzhe_keys)
         # print(getattr(yys_config, 'wangzhe'))
 
@@ -119,7 +146,10 @@ class Autogui(QThread):
         self.display_msg(self.cur_key + ': 当前状态还不能进入到可循环状态')
         return False
 
-    def run(self, auto_type: str):
+    def stop_run(self):
+        self.stop = True
+
+    def run(self, auto_type='none'):
         self.auto_type = auto_type
         if self.resize_window_size(self.config.general['width'],
                                    self.config.general['height']) is False:
@@ -195,7 +225,10 @@ class Autogui(QThread):
         return self.window.resize_window_size(width, height)
 
     def get_image(self, key):
-        return self.screenshot.get_jpg(key)
+        image = self.screenshot.get_jpg(key)
+        if image is None:
+            self.display_msg('can\'t not found ' + key)
+        return image
 
     def init_image_callback(self, prepare_callback, loop_callback):
         '''格式化图片文件及对应的callback'''
@@ -272,8 +305,8 @@ class Autogui(QThread):
 
     # %% 移动鼠标(0.5S)，取截图位置的偏中间位置，并触发鼠标点击，点击2次，间隔随机0-1S
     def click_loc(self, loc, times=-1):
-        random_x = uniform(loc.width * 0.3, loc.width * 0.6)
-        random_y = uniform(loc.height * 0.3, loc.height * 0.6)
+        random_x = uniform(loc.width * 0.4, loc.width * 0.7)
+        random_y = uniform(loc.height * 0.4, loc.height * 0.7)
         interval = uniform(0.2, 0.5)
         click_x = self.window.x_top + loc.left + random_x
         click_y = self.window.y_top + loc.top + random_y
@@ -393,11 +426,15 @@ class Autogui(QThread):
 
     def click_loc_one_when_award(self):
         im_yys = self.screenshot_exact()
-        loc_tmp = self.locate_im(self.get_image('victory'), im_yys)
+        loc_tmp = self.locate_im(self.get_image('award_general'), im_yys)
         if loc_tmp:
             self.click_loc_twice(loc_tmp)
             return
         loc_tmp = self.locate_im(self.get_image('award'), im_yys)
+        if loc_tmp:
+            self.click_loc_twice(loc_tmp)
+            return
+        loc_tmp = self.locate_im(self.get_image('victory'), im_yys)
         if loc_tmp:
             self.click_loc_twice(loc_tmp)
             return
@@ -425,7 +462,7 @@ class Autogui(QThread):
 
     def award_callback(self, loc):
         self.click_loc_one_when_award()
-        time.sleep(2)
+        time.sleep(1)
         self.click_success_check('award', self.award_callback)
 
     def fight_callback(self, loc):
@@ -445,3 +482,89 @@ class Autogui(QThread):
             return 0
         else:
             return locs
+
+    def change_fodder_type(self, fodder_type: str):
+        im_yys = self.screenshot_exact()
+        loc_tmp = self.locate_im(self.get_image(fodder_type), im_yys)
+        if loc_tmp:
+            self.display_msg('已经是选中的狗粮类型')
+            return
+
+        all_types = [
+            'all', 'fodder', 'ncard', 'rcard', 'srcard', 'ssrcard', 'spcard'
+        ]
+        all_types.remove(fodder_type)
+        for each in all_types:
+            loc_tmp = self.locate_im(self.get_image(each), im_yys)
+            if loc_tmp:
+                self.click_loc_one(loc_tmp)
+                time.sleep(1)
+                break
+
+        im_yys = self.screenshot_exact()
+        loc_tmp = self.locate_im(self.get_image(fodder_type), im_yys)
+        if loc_tmp:
+            self.click_loc_one(loc_tmp)
+            self.display_msg('切换到选中的狗粮类型')
+
+    def move_button(self, im_yys=None, drag=3):
+        '''狗粮的条拖动一定距离'''
+        if im_yys is None:
+            im_yys = self.screenshot_exact()
+        loc_tmp = self.locate_im(self.get_image('move_button'), im_yys)
+        if loc_tmp:
+            random_x = uniform(0.2 * loc_tmp.width, 0.8 * loc_tmp.width)
+            random_y = uniform(0.2 * loc_tmp.height, 0.8 * loc_tmp.height)
+            self.move_loc_inc(loc_tmp.left + random_x, loc_tmp.top + random_y)
+            self.dragRel_loc_exact(drag, 0, 0.5)  # 每次向右拖动
+
+    def exchange_fodder(self, locations: list, drag=3):
+        if len(locations) == 0:
+            self.display_msg('本次不需要更换狗粮')
+            im_yys = self.screenshot_exact()
+            loc_tmp = self.locate_im(self.get_image('prepare'), im_yys)
+            if loc_tmp:
+                self.cur_key = 'prepare'
+                self.click_loc_one(loc_tmp)
+            return
+
+        # 拖动一定距离的待选狗粮，拖动到没有5星式神为止
+        while True:
+            im_yys = self.screenshot_exact()
+            loc_red_egg = self.locate_im(self.get_image('red_egg'), im_yys)
+            if loc_red_egg or (loc_red_egg is None and drag > 0):
+                self.move_button(im_yys, drag)  # 还需要继续拖动
+                break
+
+        # 每更换一个狗粮之后拖动一个距离
+        for i in range(len(locations)):
+            # 更换大于2个狗粮时可能会因为前面两个手动导致交换异常
+            self.move_button(im_yys, 2)
+            im_yys = self.screenshot_exact()
+            flower_loc = self.locate_im(self.get_image('flower'), im_yys)
+            if flower_loc:
+                start_x = flower_loc.left + uniform(0.2 * flower_loc.width,
+                                                    0.8 * flower_loc.width)
+                start_y = flower_loc.top + uniform(0.2 * flower_loc.height,
+                                                   0.8 * flower_loc.height)
+
+                self.display_msg('drag from ({0},{1}) to ({2},{3})'.format(
+                    start_x, start_y, locations[i].left + 10,
+                    locations[i].top + 20))
+                self.move_loc_inc(start_x, start_y)
+                self.dragRel_loc_exact(locations[i].left + 10 - start_x,
+                                       locations[i].top + 10 - start_y, 1)
+
+    def get_all_images_by_locs(self, key, locs):
+        '''从各个locs中获取到最终的位置信息'''
+        locations = []
+        for i in range(len(locs)):
+            im_tmp = self.screenshot_inc(locs[i][0], locs[i][1], locs[i][2],
+                                         locs[i][3])
+            # im_tmp.show()
+            loc_tmp = self.locate_im(self.get_image(key), im_tmp)
+            if loc_tmp:
+                loc_tmp.left += locs[i][0]
+                loc_tmp.top += locs[i][1]
+                locations.append(loc_tmp)
+        return locations

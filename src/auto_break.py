@@ -58,6 +58,7 @@ class YysBreak(Autogui):
             ('group', self.group_callback),  # 切换个人挑战
             ('continue', self.click_loc_one_and_move_uncover),  # 3,6,9时用到
             ('prepare', self.prepare_callback),
+            ('unselected', self.unselected_callback),
             ('victory', self.victory_callback),
             ('fail', self.fail_callback),
             ('award', self.award_callback),
@@ -67,14 +68,22 @@ class YysBreak(Autogui):
 
     def person_callback(self, loc):
         self.cur_type = 'Person'
+        im_yys = self.screenshot_exact()
         if self.group_done is False:
-            im_yys = self.screenshot_exact()
             loc_tmp = self.locate_im(self.get_image('group_transform'), im_yys)
             if loc_tmp:
                 self.cur_key = 'group_transform'
                 self.click_loc_one(loc_tmp)
             else:
                 self.stop = True
+            return
+
+        loc_tmp = self.locate_im(self.get_image('award'), im_yys)
+        if loc_tmp:
+            # 挑战完 3 6 9 将之后可能会卡死在匹配上，做一层点击奖励的容错
+            self.cur_key = 'award'
+            self.display_msg('369次之后点击奖励')
+            self.award_callback(loc_tmp)
             return
 
         some_box_failed = False
@@ -95,6 +104,11 @@ class YysBreak(Autogui):
         if some_box_failed:
             self.display_msg('个人突破已经全部挑战完成，正在退出')
             self.stop = True
+
+    def unselected_callback(self, loc):
+        self.display_msg('寮突破还未选择突破对像，切换到个人挑战')
+        self.group_done = True
+        self.group_callback(loc)
 
     def group_callback(self, loc):
         self.cur_type = 'group'
