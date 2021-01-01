@@ -54,11 +54,11 @@ class YysBreak(Autogui):
         ]
         loop_callback = [
             ('task_accept', self.task_accept_callback),
-            ('refresh', self.person_callback),  # 切换阴阳寮挑战
-            ('group', self.group_callback),  # 切换个人挑战
+            ('refresh', self.person_callback),  # 个人挑战
+            ('group', self.group_callback),  # 寮挑战
             ('continue', self.click_loc_one_and_move_uncover),  # 3,6,9时用到
-            ('prepare', self.prepare_callback),
-            ('unselected', self.unselected_callback),
+            ('prepare', self.prepare_callback),  # 负责后续打标记
+            ('unselected', self.unselected_callback),  # 早上太早，会长还未选择对抗寮
             ('victory', self.victory_callback),
             ('fail', self.fail_callback),
             ('award', self.award_callback),

@@ -1,12 +1,4 @@
-'''
-Author: kiddo
-Date: 2020-12-31 22:45:54
-LastEditTime: 2021-01-01 01:26:49
-LastEditors: Please set LastEditors
-Description: In User Settings Edit
-FilePath: \new_yysscript\src\licence\licence.py
-'''
-
+# -*- coding: utf-8 -*-
 # %% 加载库
 
 import time

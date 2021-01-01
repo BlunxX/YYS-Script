@@ -40,12 +40,12 @@ class Yuhun(Autogui):
         loop_callback = [
             ('task_accept', self.task_accept_callback),
             ('always_accept', self.always_accept_callback),
-            ('accept', self.accept_callback),
+            ('accept', self.accept_callback),  # 队员默认接受邀请
             ('fight', self.fight_callback),  # 单人挑战
             ('team_fight', self.team_fight_callback),  # 组队挑战
             ('time', self.void_callback),
             ('yes', self.yes_callback),  # 确认，队长默认邀请队员
-            ('confirm', self.click_loc_one), # 确认，队长默认邀请队员
+            ('confirm', self.click_loc_one),  # 确定
             ('prepare', self.prepare_callback),
             ('victory', self.victory_callback),
             ('fail', self.fail_callback),

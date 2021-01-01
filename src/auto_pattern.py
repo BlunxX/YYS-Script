@@ -1,11 +1,3 @@
-'''
-Author: your name
-Date: 2021-01-01 09:17:28
-LastEditTime: 2021-01-01 09:35:38
-LastEditors: Please set LastEditors
-Description: In User Settings Edit
-FilePath: \new_yysscript\src\auto_pattern.py
-'''
 #!/usr/bin/python
 # -*- coding: utf-8 -*
 
