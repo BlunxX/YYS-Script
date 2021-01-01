@@ -23,14 +23,18 @@ class Yuling(Autogui):
         self.loop_times = self.config.cur_config.get('loop_times', 20)
         self.fight_type = self.config.cur_config.get('type', 'leopard')
         self.already_select_layer = False
+        self.remain_types = ['leopard', 'fox', 'phenix', 'dragon']
+        self.remain_types.remove(self.fight_type)
+        self.remain_types.insert(0, self.fight_type)  # 设置的挑战类型放在第一个
 
         prepare_callback = [
             ('search', self.click_loc_one),
             ('yuling', self.click_loc_one),
-            ('dragon', self.dragon_callback),
-            ('fox', self.fox_callback),
-            ('leopard', self.leopard_callback),
-            ('phenix', self.phenix_callback),
+            ('unopened', self.unopened_callback),
+            ('dragon', self.unopened_callback),
+            ('fox', self.unopened_callback),
+            ('leopard', self.unopened_callback),
+            ('phenix', self.unopened_callback),
         ]
         loop_callback = [
             ('task_accept', self.task_accept_callback),
@@ -43,32 +47,22 @@ class Yuling(Autogui):
 
         self.init_image_callback(prepare_callback, loop_callback)
 
-    def _fighttype_callback(self, loc, fight_type):
-        '''点击神龙'''
-        if self.fight_type != fight_type:
-            self.display_msg('挑战类型不匹配：{0}!={1}，切换到类型：{1}'.format(
-                fight_type, self.fight_type))
-
+    def _fighttype_callback(self, fight_type):
         im_yys = self.screenshot_exact()
-        loc_tmp = self.locate_im(self.get_image(self.fight_type), im_yys)
+        loc_tmp = self.locate_im(self.get_image(fight_type), im_yys)
         if loc_tmp:
-            self.cur_key = self.fight_type
+            self.cur_key = fight_type
             self.click_loc_one(loc_tmp)
         else:
-            self.display_msg('无法切换到类型：{0}'.format(self.fight_type))
-            return
+            self.display_msg('无法切换到类型：{0}'.format(fight_type))
 
-    def dragon_callback(self, loc):
-        self._fighttype_callback(loc, 'dragon')
-
-    def fox_callback(self, loc):
-        self._fighttype_callback(loc, 'fox')
-
-    def leopard_callback(self, loc):
-        self._fighttype_callback(loc, 'leopard')
-
-    def phenix_callback(self, loc):
-        self._fighttype_callback(loc, 'phenix')
+    def unopened_callback(self, loc):
+        if len(self.remain_types) == 0:
+            self.stop = True
+            self.display_msg('所有类型都未开放')
+        self.last_fight_type = self.remain_types[0]
+        self.remain_types.remove(self.remain_types[0])
+        self._fighttype_callback(self.last_fight_type)
 
     def fight_callback(self, loc):
         if self.already_select_layer is False:

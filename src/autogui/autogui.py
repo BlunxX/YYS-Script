@@ -112,6 +112,14 @@ class Autogui(QThread):
             ('change_fodder', 'bool', True),
         ]
 
+        pattern_keys = [
+            ('loop_times', 'int', 100),
+            ('attention', 'str', ''),
+            ('winname', 'str', 'None'),
+            ('prepare_keys', 'str', ''),
+            ('loop_keys', 'str', ''),
+        ]
+
         yys_config.read_one_type_config('general', general_keys)
         # print(getattr(yys_config, 'general'))
         yys_config.read_one_type_config('yuling', yuling_keys)
@@ -128,6 +136,8 @@ class Autogui(QThread):
         # print(getattr(yys_config, 'yeyuanhuo'))
         yys_config.read_one_type_config('wangzhe', wangzhe_keys)
         # print(getattr(yys_config, 'wangzhe'))
+        yys_config.read_one_type_config('pattern', pattern_keys)
+        # print(getattr(yys_config, 'pattern'))
 
     def init_screenshot(self):
         self.screenshot = YysScreenshot('')
@@ -196,6 +206,9 @@ class Autogui(QThread):
 
             im_yys = self.screenshot_exact()  # 执行操作之后需要重新获取截图
             for callback in self.loop_image_callback:
+                if callback.image is None:
+                    self.display_msg('请确认截图{}存在'.format(callback.key))
+                    continue
                 loc = self.locate_im(callback.image, im_yys)
                 if loc is None:
                     continue
@@ -206,6 +219,7 @@ class Autogui(QThread):
                 break
 
             if found is False:
+                self.display_msg('该轮匹配不到图片')
                 time.sleep(1)
 
     def raise_msg(self, msg):

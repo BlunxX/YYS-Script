@@ -18,7 +18,7 @@ import re
 GENEAL_UUID = '000000000000'
 GENERAL_KEY = 'kiddo'
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 import subprocess
 

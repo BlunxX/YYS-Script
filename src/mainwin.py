@@ -27,6 +27,7 @@ from auto_yuling import Yuling
 from auto_yuhun import Yuhun
 from auto_upgrade import UpgradeFodder
 from auto_yeyuanhuo import Yeyuanhuo
+from auto_pattern import Pattern
 from config import YysConfig
 from main_widget import Ui_yys_win
 
@@ -45,7 +46,8 @@ class YysWin(QMainWindow):
         self.show_attention(self.config.general['attention'])
         self.setWindowTitle(self.config.general['title'])
         self.setWindowIcon(QIcon(":/icon/images/zhangliang.ico"))
-        funcs = ["御魂", "困28", "御灵", "业原火", "结界突破", '升级狗粮', '王者荣耀']
+        # '王者荣耀',
+        funcs = ["御魂", "困28", "御灵", "业原火", "结界突破", '升级狗粮', '点击模式']
         self.set_ui_cmbox(self.ui.cb_fuctions, funcs)
         self.init_cb_fuctions(self.ui.cb_fuctions.currentText())
 
@@ -87,6 +89,9 @@ class YysWin(QMainWindow):
         elif self.select_fun == '业原火':
             attentions = self.config.yeyuanhuo['attention']
             titles = [['更换狗粮', '不更换'], times, ['狗粮类型', 'N卡', '白蛋']]
+        elif self.select_fun == '点击模式':
+            attentions = self.config.yeyuanhuo['attention']
+            titles = [ times]
         self.show_attention(attentions)
         self.set_comboxes(titles)
 
@@ -153,6 +158,14 @@ class YysWin(QMainWindow):
             ('change_fodder', 'bool', True),
         ]
 
+        pattern_keys = [
+            ('loop_times', 'int', 100),
+            ('attention', 'str', ''),
+            ('winname', 'str', 'None'),
+            ('prepare_keys', 'str', ''),
+            ('loop_keys', 'str', ''),
+        ]
+
         yys_config.read_one_type_config('general', general_keys)
         # print(getattr(yys_config, 'general'))
         yys_config.read_one_type_config('yuling', yuling_keys)
@@ -169,6 +182,8 @@ class YysWin(QMainWindow):
         # print(getattr(yys_config, 'yeyuanhuo'))
         yys_config.read_one_type_config('wangzhe', wangzhe_keys)
         # print(getattr(yys_config, 'wangzhe'))
+        yys_config.read_one_type_config('pattern', pattern_keys)
+        # print(getattr(yys_config, 'pattern'))
 
     def display_msg(self, msg, type='Info'):
         if (type == 'Info'):
@@ -283,6 +298,11 @@ class YysWin(QMainWindow):
         self._set_loop_times(configs, cb_texts[1])
         configs['fodder_type'] = 'ncard' if cb_texts[3] == 'N卡' else 'fodder'
 
+    def set_pattern_config(self, cb_texts):
+        # titles = [times]
+        configs = self.config.pattern
+        self._set_loop_times(configs, cb_texts[0])
+
     def get_config_from_param_cb(self):
         cb_texts = []
         cb_texts.append(self.ui.cb_p1.currentText())
@@ -306,6 +326,8 @@ class YysWin(QMainWindow):
             self.set_upgrade_config(cb_texts)
         elif self.select_fun == '业原火':
             self.set_yeyuanhuo_config(cb_texts)
+        elif self.select_fun == '点击模式':
+            self.set_pattern_config(cb_texts)
 
     def check_licence(self):
         '''设置过期时间'''
@@ -367,6 +389,10 @@ class YysWin(QMainWindow):
         elif self.select_fun == '业原火':
             self.autogui = Yeyuanhuo()
             self.auto_type = 'yeyuanhuo'
+        elif self.select_fun == '点击模式':
+            self.autogui = Pattern()
+            self.auto_type = 'pattern'
+            self.autogui.window.set_only_getwin(True)
         self.has_start = True
         self.autogui.sendmsg.connect(self.display_msg)
         self.stop_run.connect(self.autogui.stop_run)

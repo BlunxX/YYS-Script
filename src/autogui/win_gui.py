@@ -4,6 +4,7 @@
 import win32gui
 import win32con
 import logging
+from win32api import GetSystemMetrics
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 
 # def get_all_windows(win_name):
@@ -46,16 +47,30 @@ class Yys_windows_GUI(Yys_GUI):
 
     sendmsg = pyqtSignal(str, str)  # type, msg
 
-    def __init__(self, win_name='阴阳师-网易游戏'):
+    def __init__(self, win_name='阴阳师-网易游戏', only_getwin=False):
         # 获取窗体的特性
         Yys_GUI.__init__(self, win_name)
         self.handler = None
         self.x_top = self.y_top = self.x_bottom = self.y_bottom = 0
         self.win_width = self.win_height = 0
         self.windows = []  # 过滤出来的窗体
+        self.is_fullscreen = False  # 是否是全屏
+        self.only_getwin = only_getwin  # 是否只取窗体信息
+
+    def set_only_getwin(self, only_getwin):
+        self.only_getwin = only_getwin
 
     def get_window_handler(self):
         '''获取到阴阳师窗体信息'''
+        if self.win_name == 'None':
+            width, height = GetSystemMetrics(0), GetSystemMetrics(1)
+            self.x_top, self.y_top = 0, 0
+            self.x_bottom, self.y_bottom = width, height
+            self.win_width, self.win_height = width, height
+            logging.info('使用全屏的分辨率，width:{0}, height:{1}'.format(
+                width, height))
+            return True
+
         handler = win32gui.FindWindow(0, self.win_name)  # 获取窗口句柄
         if handler == 0:
             self.raise_msg('捕获不到程序：' + self.win_name)
@@ -76,6 +91,9 @@ class Yys_windows_GUI(Yys_GUI):
         return True
 
     def resize_window_size(self, width=800, height=480):
+        if self.win_name == 'None' or self.only_getwin:
+            return self.get_window_handler()
+
         '''设置固定大小，方便后续截图和比对，这里比较有限制'''
         if self.get_window_handler() is False:
             self.raise_msg('请确认程序有开启' + self.win_name)
