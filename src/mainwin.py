@@ -28,6 +28,7 @@ from auto_yuhun import Yuhun
 from auto_upgrade import UpgradeFodder
 from auto_yeyuanhuo import Yeyuanhuo
 from auto_pattern import Pattern
+from auto_rilun import Rilun
 from config import YysConfig
 from main_widget import Ui_yys_win
 
@@ -47,7 +48,7 @@ class YysWin(QMainWindow):
         self.setWindowTitle(self.config.general['title'])
         self.setWindowIcon(QIcon(":/icon/images/zhangliang.ico"))
         # '王者荣耀',
-        funcs = ["御魂", "困28", "御灵", "业原火", "结界突破", '升级狗粮', '点击模式']
+        funcs = ["御魂", "困28", "御灵", "业原火", "结界突破", '升级狗粮', '日轮之城', '点击模式']
         self.set_ui_cmbox(self.ui.cb_fuctions, funcs)
         self.init_cb_fuctions(self.ui.cb_fuctions.currentText())
 
@@ -88,10 +89,14 @@ class YysWin(QMainWindow):
             titles = [['升星等级', '2->3', '3->4'], times]
         elif self.select_fun == '业原火':
             attentions = self.config.yeyuanhuo['attention']
+            attentions = self.config.yeyuanhuo['attention']
+        elif self.select_fun == '日轮之城':
+            attentions = self.config.rilun['attention']
             titles = [['更换狗粮', '不更换'], times, ['狗粮类型', 'N卡', '白蛋']]
         elif self.select_fun == '点击模式':
-            attentions = self.config.yeyuanhuo['attention']
-            titles = [ times]
+            attentions = self.config.pattern['attention']
+            titles = [times]
+
         self.show_attention(attentions)
         self.set_comboxes(titles)
 
@@ -158,6 +163,14 @@ class YysWin(QMainWindow):
             ('change_fodder', 'bool', True),
         ]
 
+        rilun_keys = [
+            ('loop_times', 'int', 100),
+            ('fodder_type', 'str', 'fodder'),
+            ('drag', 'int', 5),
+            ('attention', 'str', ''),
+            ('change_fodder', 'bool', True),
+        ]
+
         pattern_keys = [
             ('loop_times', 'int', 100),
             ('attention', 'str', ''),
@@ -180,6 +193,8 @@ class YysWin(QMainWindow):
         # print(getattr(yys_config, 'upgrade'))
         yys_config.read_one_type_config('yeyuanhuo', yeyuanhuo_keys)
         # print(getattr(yys_config, 'yeyuanhuo'))
+        yys_config.read_one_type_config('rilun', rilun_keys)
+        # print(getattr(yys_config, 'rilun'))
         yys_config.read_one_type_config('wangzhe', wangzhe_keys)
         # print(getattr(yys_config, 'wangzhe'))
         yys_config.read_one_type_config('pattern', pattern_keys)
@@ -298,6 +313,13 @@ class YysWin(QMainWindow):
         self._set_loop_times(configs, cb_texts[1])
         configs['fodder_type'] = 'ncard' if cb_texts[3] == 'N卡' else 'fodder'
 
+    def set_rilun_config(self, cb_texts):
+        # titles = [['更换狗粮', '不更换'], times, ['狗粮类型', 'N卡', '白蛋']]
+        configs = self.config.rilun
+        configs['change_fodder'] = True if cb_texts[0] == '更换狗粮' else False
+        self._set_loop_times(configs, cb_texts[1])
+        configs['fodder_type'] = 'ncard' if cb_texts[3] == 'N卡' else 'fodder'
+
     def set_pattern_config(self, cb_texts):
         # titles = [times]
         configs = self.config.pattern
@@ -326,6 +348,8 @@ class YysWin(QMainWindow):
             self.set_upgrade_config(cb_texts)
         elif self.select_fun == '业原火':
             self.set_yeyuanhuo_config(cb_texts)
+        elif self.select_fun == '日轮之城':
+            self.set_rilun_config(cb_texts)
         elif self.select_fun == '点击模式':
             self.set_pattern_config(cb_texts)
 
@@ -389,6 +413,9 @@ class YysWin(QMainWindow):
         elif self.select_fun == '业原火':
             self.autogui = Yeyuanhuo()
             self.auto_type = 'yeyuanhuo'
+        elif self.select_fun == '日轮之城':
+            self.autogui = Rilun()
+            self.auto_type = 'rilun'
         elif self.select_fun == '点击模式':
             self.autogui = Pattern()
             self.auto_type = 'pattern'

@@ -112,6 +112,14 @@ class Autogui(QThread):
             ('change_fodder', 'bool', True),
         ]
 
+        rilun_keys = [
+            ('loop_times', 'int', 100),
+            ('fodder_type', 'str', 'fodder'),
+            ('drag', 'int', 5),
+            ('attention', 'str', ''),
+            ('change_fodder', 'bool', True),
+        ]
+
         pattern_keys = [
             ('loop_times', 'int', 100),
             ('attention', 'str', ''),
@@ -134,6 +142,8 @@ class Autogui(QThread):
         # print(getattr(yys_config, 'upgrade'))
         yys_config.read_one_type_config('yeyuanhuo', yeyuanhuo_keys)
         # print(getattr(yys_config, 'yeyuanhuo'))
+        yys_config.read_one_type_config('rilun', rilun_keys)
+        # print(getattr(yys_config, 'rilun'))
         yys_config.read_one_type_config('wangzhe', wangzhe_keys)
         # print(getattr(yys_config, 'wangzhe'))
         yys_config.read_one_type_config('pattern', pattern_keys)
