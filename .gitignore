@@ -114,3 +114,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 src/new_tools.exe
+src/release/
