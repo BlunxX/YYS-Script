@@ -5,17 +5,19 @@
 import os
 import sys
 import time
+import logging
 from random import randint, uniform
 
 cur_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
 sys.path.append(os.path.join(cur_dir, 'autogui'))
+logger = logging.getLogger('kiddo')
 
 from autogui import Autogui, ImageCallback
 
 
 class Wangzhe(Autogui):
     def __init__(self, win_name='腾讯手游助手【极速傲引擎-7.1】'):
-    # def __init__(self, win_name='王者荣耀 - MuMu模拟器'):
+        # def __init__(self, win_name='王者荣耀 - MuMu模拟器'):
         Autogui.__init__(self, win_name)
         # 设置当前副本的类型，设置之后优先查找御灵对应的截图
         self.screenshot.set_current_setion('wangzhe')  # 设置优先的截图信息
@@ -101,5 +103,5 @@ class Wangzhe(Autogui):
 if __name__ == '__main__':
     autogui = Wangzhe()
     autogui.run('wangzhe')
-    print(autogui.prepare_image_callback)
-    print(autogui.loop_image_callback)
+    logger.debug(str(autogui.prepare_image_callback))
+    logger.debug(str(autogui.loop_image_callback))

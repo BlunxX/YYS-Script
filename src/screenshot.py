@@ -7,11 +7,13 @@ import sys
 from PIL import Image
 import cv2
 import numpy as np
+import logging
 from matplotlib import pyplot as plt
 
 # %% 取出图片对应的截图文件，文件的目录结构
 cur_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
 IMAGES_PATH = os.path.join(cur_dir, 'screenshot')
+logger = logging.getLogger('kiddo')
 '''
 图片类型1：
     图片1.jpg
@@ -60,7 +62,7 @@ class Location:
 
 
 def locate_im_cv2cv(template, target_rgb_gray, confidence=0.8,
-                     multi_loc=False):
+                    multi_loc=False):
     h, w = template.shape[0], template.shape[1]
     res = cv2.matchTemplate(target_rgb_gray, template, cv2.TM_CCOEFF_NORMED)
     loc = np.where(res >= confidence)
@@ -78,8 +80,8 @@ def locate_im_cv2cv(template, target_rgb_gray, confidence=0.8,
     else:
         return None
 
-def locate_im_cv2pil(template, target, confidence=0.8,
-                     multi_loc=False):
+
+def locate_im_cv2pil(template, target, confidence=0.8, multi_loc=False):
     return locate_im_cv2cv(template, pil2cv(target), confidence, multi_loc)
 
 
@@ -91,7 +93,9 @@ def locate_image_cv2pil(template: np.ndarray, target: Image, confidence=0.8):
     return locate_im_cv2cv(template, pil2cv(target), confidence)
 
 
-def locate_image_cv2cv(template: np.ndarray, target: np.ndarray, confidence=0.8):
+def locate_image_cv2cv(template: np.ndarray,
+                       target: np.ndarray,
+                       confidence=0.8):
     return locate_im_cv2cv(template, pil2cv(target), confidence)
 
 
@@ -124,12 +128,13 @@ class Screenshot:
         try:
             return cv2.imread(image_path, 0)  # 直接读取灰度后的图片
         except Exception as error:
-            print('打开图片失败，{0}, msg:{1}'.format(image_path, error))
+            logger.debug('打开图片失败，{0}, msg:{1}'.format(image_path, error))
             return None
 
     def read_section_jpg(self, section):
         if hasattr(self, section):
-            print('find_all_jpg: already has section:{0}'.format(section))
+            logger.debug(
+                'find_all_jpg: already has section:{0}'.format(section))
             return False
 
         setattr(self, section, {})  # 添加对应的副本分类的字典
@@ -182,19 +187,19 @@ class YysScreenshot(Screenshot):
 
 
 if __name__ == '__main__':
-    # screenshot = Screenshot()
-    # if screenshot.is_path_exists():
-    #     screenshot.read_section_jpg('yeyuanhuo')
-    #     print(getattr(screenshot, 'yeyuanhuo'))
+    screenshot = Screenshot()
+    if screenshot.is_path_exists():
+        screenshot.read_section_jpg('yeyuanhuo')
+        logger.debug(str(getattr(screenshot, 'yeyuanhuo')))
 
-    #     screenshot.read_section_jpg('yuling')
-    #     print(getattr(screenshot, 'yuling'))
+        screenshot.read_section_jpg('yuling')
+        logger.debug(str(getattr(screenshot, 'yuling')))
 
-    #     screenshot.read_section_jpg('general')
-    #     print(getattr(screenshot, 'general'))
+        screenshot.read_section_jpg('general')
+        logger.debug(str(getattr(screenshot, 'general')))
 
     #     screenshot.get_section_jpg('yeyuanhuo', 'absent').show()
     screenshot = YysScreenshot('yeyuanhuo')
     jpgs = screenshot.get_jpgs(['absent', 'chi'])
     images = [x[1] for x in jpgs.items()]
-    print(images)
+    logger.debug(str(images))

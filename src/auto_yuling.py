@@ -5,10 +5,12 @@
 import os
 import sys
 import time
+import logging
 from random import randint, uniform
 
 cur_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
 sys.path.append(os.path.join(cur_dir, 'autogui'))
+logger = logging.getLogger('kiddo')
 
 from autogui import Autogui, ImageCallback
 
@@ -81,5 +83,5 @@ class Yuling(Autogui):
 if __name__ == '__main__':
     autogui = Yuling()
     autogui.run('yuling')
-    print(autogui.prepare_image_callback)
-    print(autogui.loop_image_callback)
+    logger.debug(str(autogui.prepare_image_callback))
+    logger.debug(str(autogui.loop_image_callback))

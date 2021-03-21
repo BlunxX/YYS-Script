@@ -16,6 +16,7 @@ import images
 import time
 import datetime
 import licence
+import logging
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtCore import pyqtSignal
@@ -32,6 +33,9 @@ from auto_rilun import Rilun
 from config import YysConfig
 from main_widget import Ui_yys_win
 
+# 全局的 logger
+logger = logging.getLogger('kiddo')
+
 
 class YysWin(QMainWindow):
     stop_run = pyqtSignal()
@@ -44,6 +48,7 @@ class YysWin(QMainWindow):
 
         self.ui.pte_msg.clear()  # 清理界面
         self.init_config()  # 获取到配置
+        self.init_logging_level()  # 设置日志等级
         self.show_attention(self.config.general['attention'])
         self.setWindowTitle(self.config.general['title'])
         self.setWindowIcon(QIcon(":/icon/images/zhangliang.ico"))
@@ -118,87 +123,58 @@ class YysWin(QMainWindow):
             ('height', 'int', 8),
             ('licence', 'str', 'ABC'),
         ]
-        yuling_keys = [
+
+        section_keys = [
+            # 御灵相关
             ('loop_times', 'int', 200),
             ('type', 'str', 'dragon'),
             ('layer', 'int', 3),
-            ('attention', 'str', ''),
-        ]
-        break_keys = [
-            ('loop_times', 'int', 200),
-            ('attention', 'str', ''),
-        ]
-        chapter_keys = [
-            ('loop_times', 'int', 200),
-            ('players', 'int', 1),
-            ('captain', 'bool', True),
-            ('fodder_type', 'str', 'fodder'),
-            ('drag', 'int', 5),
-            ('attention', 'str', ''),
-        ]
-
-        yuhun_keys = [
-            ('loop_times', 'int', 200),
-            ('players', 'int', 2),
-            ('captain', 'bool', True),
-            ('attention', 'str', ''),
-        ]
-
-        wangzhe_keys = [
-            ('loop_times', 'int', 50),
-            ('attention', 'str', ''),
-        ]
-
-        upgrade_keys = [
-            ('loop_times', 'int', 50),
-            ('upgrade_stars', 'int', 2),
-            ('attention', 'str', ''),
-        ]
-
-        yeyuanhuo_keys = [
-            ('loop_times', 'int', 100),
-            ('fodder_type', 'str', 'fodder'),
-            ('drag', 'int', 5),
-            ('attention', 'str', ''),
-            ('change_fodder', 'bool', True),
-        ]
-
-        rilun_keys = [
-            ('loop_times', 'int', 100),
-            ('fodder_type', 'str', 'fodder'),
-            ('drag', 'int', 5),
-            ('attention', 'str', ''),
-            ('change_fodder', 'bool', True),
-        ]
-
-        pattern_keys = [
-            ('loop_times', 'int', 100),
-            ('attention', 'str', ''),
             ('winname', 'str', 'None'),
+            ('attention', 'str', '无'),
+
+            # 组队相关
+            ('fodder_type', 'str', 'fodder'),
+            ('drag', 'int', 5),
+            ('change_fodder', 'bool', True),
+            ('captain', 'bool', True),
+            ('players', 'int', 2),
+
+            # 升级狗粮
+            ('upgrade_stars', 'int', 2),
+
+            # 点击模式
             ('prepare_keys', 'str', ''),
             ('loop_keys', 'str', ''),
         ]
+        '''设置自动读取配置，配置类型参照keys的类型，因为要简化掉，所以最终数据会有冗余'''
+        sections = yys_config.get_sections()
+        for section in sections:
+            if section == 'general':
+                yys_config.read_one_type_config(section, general_keys)
+            else:
+                yys_config.read_one_type_config(section, section_keys)
+            logger.debug(str(getattr(yys_config, section)))
 
-        yys_config.read_one_type_config('general', general_keys)
-        # print(getattr(yys_config, 'general'))
-        yys_config.read_one_type_config('yuling', yuling_keys)
-        # print(getattr(yys_config, 'yuling'))
-        yys_config.read_one_type_config('yys_break', break_keys)
-        # print(getattr(yys_config, 'yys_break'))
-        yys_config.read_one_type_config('chapter', chapter_keys)
-        # print(getattr(yys_config, 'chapter'))
-        yys_config.read_one_type_config('yuhun', yuhun_keys)
-        # print(getattr(yys_config, 'yuhun'))
-        yys_config.read_one_type_config('upgrade', upgrade_keys)
-        # print(getattr(yys_config, 'upgrade'))
-        yys_config.read_one_type_config('yeyuanhuo', yeyuanhuo_keys)
-        # print(getattr(yys_config, 'yeyuanhuo'))
-        yys_config.read_one_type_config('rilun', rilun_keys)
-        # print(getattr(yys_config, 'rilun'))
-        yys_config.read_one_type_config('wangzhe', wangzhe_keys)
-        # print(getattr(yys_config, 'wangzhe'))
-        yys_config.read_one_type_config('pattern', pattern_keys)
-        # print(getattr(yys_config, 'pattern'))
+    def init_logging_level(self):
+        configs = self.config.general
+        level = configs.get('log_level', 'INFO')
+        if level == 'NONE':
+            return
+        elif level == 'INFO':
+            logger.setLevel(logging.INFO)
+        else:
+            logger.setLevel(logging.DEBUG)
+
+        # BASIC_FORMAT= '%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
+        BASIC_FORMAT = '%(asctime)s - %(levelname)s: %(message)s'
+        DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+        formatter = logging.Formatter(BASIC_FORMAT, DATE_FORMAT)
+        chlr = logging.StreamHandler()  # 输出到控制台的handler
+        chlr.setFormatter(formatter)
+        fhlr = logging.FileHandler('debug.log', 'w')  # 输出到文件的handler
+        fhlr.setFormatter(formatter)
+        logger.addHandler(chlr)
+        logger.addHandler(fhlr)
 
     def display_msg(self, msg, type='Info'):
         if (type == 'Info'):

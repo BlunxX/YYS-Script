@@ -5,10 +5,12 @@
 import configparser
 import os
 import sys
+import logging
 
 # %% 取出配置对应的文件
 cur_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
 CONF_PATH = os.path.join(cur_dir, 'conf', 'config.ini')
+logger = logging.getLogger('kiddo')
 
 
 class Config:
@@ -28,7 +30,7 @@ class Config:
             self.config_parser.read(confpath, encoding='utf-8')
             self.parser_created = True
         except Exception as error:
-            print('读取配置文件失败：{0},{1}'.format(confpath, str(error)))
+            logger.debug('读取配置文件失败：{0},{1}'.format(confpath, str(error)))
 
     def is_parser_created(self):
         return self.parser_created
@@ -40,7 +42,8 @@ class Config:
         try:
             return self.config_parser.get(section, option)
         except Exception as error:
-            print('获取{0},{1}失败, {2}'.format(section, option, str(error)))
+            logger.debug('获取{0},{1}失败, {2}'.format(section, option,
+                                                   str(error)))
             return default
 
     def read_option_int(self, section, option, default):
@@ -50,7 +53,8 @@ class Config:
         try:
             return self.config_parser.getint(section, option)
         except Exception as error:
-            print('获取{0},{1}失败, {2}'.format(section, option, str(error)))
+            logger.debug('获取{0},{1}失败, {2}'.format(section, option,
+                                                   str(error)))
             return default
 
     def read_option_bool(self, section, option, default):
@@ -60,47 +64,57 @@ class Config:
         try:
             return self.config_parser.getboolean(section, option)
         except Exception as error:
-            print('获取{0},{1}失败, {2}'.format(section, option, str(error)))
+            logger.debug('获取{0},{1}失败, {2}'.format(section, option,
+                                                   str(error)))
             return default
 
     def set_current_setion(self, section):
         try:
             conf = getattr(self, section)
         except Exception:
-            print('获取section:{0}失败'.formaot(section))
+            logger.debug('获取section:{0}失败'.formaot(section))
         finally:
             self.cur_config = conf if conf else getattr(self, 'general')
 
-    def read_one_type_config(self, read_type: str, read_keys: (str, str, str)):
+    def get_sections(self):
+        return self.config_parser.sections()
+
+    def read_one_type_config(self, setcion: str, read_keys: (str, str, str)):
         '''read_keys的三个位置分别代表： key, type, default_value'''
-        if hasattr(self, read_type):
-            print('{0}类型已经读取过一次了，请求检查配置文件并进行合并'.format(read_type))
+        if hasattr(self, setcion):
+            logger.debug('{0}类型已经读取过一次了，请求检查配置文件并进行合并'.format(setcion))
             return
         else:
             sections = self.config_parser.sections()
-            setattr(self, read_type, {})  # 新增一个字典
-            config = getattr(self, read_type)
-            if read_type not in sections:
-                print('没有找到sections:{0}，使用默认值赋值'.format(read_type))
+            setattr(self, setcion, {})  # 新增一个字典
+            config = getattr(self, setcion)
+            if setcion not in sections:
+                logger.debug('没有找到sections:{0}，使用默认值赋值'.format(setcion))
                 for one_key in read_keys:
                     config[one_key[0]] = one_key[2]
                 return
             else:
                 for (key, type, default_value) in read_keys:
-                    if type == 'int':
-                        value = self.read_option_int(read_type, key,
-                                                     default_value)
-                        config[key] = value
-                    elif type == 'str':
-                        value = self.read_option_str(read_type, key,
-                                                     default_value)
-                        config[key] = value
-                    elif type == 'bool':
-                        value = self.read_option_bool(read_type, key,
-                                                      default_value)
-                        config[key] = value
-                    else:
+                    try:
+                        if type == 'int':
+                            value = self.read_option_int(
+                                setcion, key, default_value)
+                            config[key] = value
+                        elif type == 'str':
+                            value = self.read_option_str(
+                                setcion, key, default_value)
+                            config[key] = value
+                        elif type == 'bool':
+                            value = self.read_option_bool(
+                                setcion, key, default_value)
+                            config[key] = value
+                        else:
+                            config[key] = default_value
+                    except Exception:
+                        logger.debug('{0} has no {1}, set default {2}'.format(
+                            setcion, key, default_value))
                         config[key] = default_value
+                        continue
 
 
 class YysConfig(Config):
@@ -120,7 +134,7 @@ class YysConfig(Config):
 
 if __name__ == '__main__':
     yys_config = YysConfig(name='yys_config')
-    print(yys_config.is_parser_created())
+    logger.debug(str(yys_config.is_parser_created()))
 
     general_keys = [
         ('title', 'str', 'x笑cry-辅助工具'),
@@ -128,4 +142,4 @@ if __name__ == '__main__':
         ('gitpath', 'str', '无'),
     ]
     yys_config.read_one_type_config('general', general_keys)
-    print(getattr(yys_config, 'general'))
+    logger.debug(str(getattr(yys_config, 'general')))

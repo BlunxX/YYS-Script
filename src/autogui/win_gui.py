@@ -7,6 +7,8 @@ import logging
 from win32api import GetSystemMetrics
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 
+logger = logging.getLogger('kiddo')
+
 # def get_all_windows(win_name):
 #     def print_window(hwnd, extra):
 #         if win_name in win32gui.GetWindowText(hwnd):
@@ -34,12 +36,12 @@ class Yys_GUI(QThread):
 
     def raise_msg(self, msg):
         '''输出日志到框内，且弹窗提醒错误'''
-        print(msg)
+        logger.warn(msg)
         self.sendmsg.emit(msg, 'Error')
 
     def display_msg(self, msg):
         '''输出日志到框内'''
-        print(msg)
+        logger.info(msg)
         self.sendmsg.emit(msg, 'Info')
 
 
@@ -67,8 +69,7 @@ class Yys_windows_GUI(Yys_GUI):
             self.x_top, self.y_top = 0, 0
             self.x_bottom, self.y_bottom = width, height
             self.win_width, self.win_height = width, height
-            logging.info('使用全屏的分辨率，width:{0}, height:{1}'.format(
-                width, height))
+            logger.info('使用全屏的分辨率，width:{0}, height:{1}'.format(width, height))
             return True
 
         handler = win32gui.FindWindow(0, self.win_name)  # 获取窗口句柄
@@ -84,7 +85,7 @@ class Yys_windows_GUI(Yys_GUI):
             self.win_name, self.x_top, self.y_top, self.win_width,
             self.win_height))
 
-        logging.info(
+        logger.info(
             '位置信息：top({0},{1}), bottom({2},{3}), width:{4}, height:{5} '.
             format(self.x_top, self.y_top, self.x_bottom, self.y_bottom,
                    self.win_width, self.win_height))
@@ -93,7 +94,6 @@ class Yys_windows_GUI(Yys_GUI):
     def resize_window_size(self, width=800, height=480):
         if self.win_name == 'None' or self.only_getwin:
             return self.get_window_handler()
-
         '''设置固定大小，方便后续截图和比对，这里比较有限制'''
         if self.get_window_handler() is False:
             self.raise_msg('请确认程序有开启' + self.win_name)

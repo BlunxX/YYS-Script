@@ -6,13 +6,11 @@ import hashlib
 import base64
 import logging
 import re
+import subprocess
 
 GENEAL_UUID = '000000000000'
 GENERAL_KEY = 'kiddo'
-
-logging.basicConfig(level=logging.INFO)
-
-import subprocess
+logger = logging.getLogger('kiddo')
 
 
 def execute_cmd(cmd):
@@ -74,8 +72,8 @@ def get_licence(uuid, year, month, day):
 
     # 获取base64编码
     encode_str = base64.b64encode(orig_str.encode('utf-8')).decode()
-    logging.debug('加密用的关键信息：{0}，{1}，{2}，{3}'.format(uuid, timestamp, orig_str,
-                                                    encoded_str))
+    logger.debug('加密用的关键信息：{0}，{1}，{2}，{3}'.format(uuid, timestamp, orig_str,
+                                                   encoded_str))
     return encode_str
 
 
@@ -84,14 +82,14 @@ def check_license(encode_str):
         decode_str = base64.b64decode(encode_str.encode('utf-8')).decode()
         elements = decode_str.split('_')
         if len(elements) != 2:
-            logging.debug('鉴权失败：解密串格式不对, {0}'.format(encode_str))
+            logger.debug('鉴权失败：解密串格式不对, {0}'.format(encode_str))
             return False
     except Exception:
-        logging.debug('鉴权失败：解密串格式不对, {0}'.format(encode_str))
+        logger.debug('鉴权失败：解密串格式不对, {0}'.format(encode_str))
         return False
 
     md5, timestamp = elements[0], int(elements[1])
-    logging.debug('从licence中获取到的信息：str={0}, md5={1}, time={2}'.format(
+    logger.debug('从licence中获取到的信息：str={0}, md5={1}, time={2}'.format(
         encode_str, md5, timestamp))
 
     # 获取uuid，并根据关键字计算出md5
@@ -99,17 +97,17 @@ def check_license(encode_str):
     if md5 != local_md5:
         local_md5 = get_md5(GENEAL_UUID + GENERAL_KEY)
         if md5 != local_md5:
-            logging.debug('鉴权失败：即不匹配uuid，也不匹配通用uuid,md5，{0} != {1}'.format(
+            logger.debug('鉴权失败：即不匹配uuid，也不匹配通用uuid,md5，{0} != {1}'.format(
                 md5, local_md5))
             return False
 
     # 检查时间戳
     local_timestamp = int(time.time())
     if local_timestamp > timestamp:
-        logging.debug('鉴权失败：timestamp，{0} < {1}'.format(
-            timestamp, local_timestamp))
+        logger.debug('鉴权失败：timestamp，{0} < {1}'.format(timestamp,
+                                                       local_timestamp))
         return False
-    logging.debug(encode_str + '鉴权成功')
+    logger.debug(encode_str + '鉴权成功')
     return True
 
 
@@ -118,18 +116,18 @@ def get_remain_time(encode_str) -> str:
     decode_str = base64.b64decode(encode_str.encode('utf-8')).decode()
     elements = decode_str.split('_')
     if len(elements) != 2:
-        logging.debug('鉴权失败：解密串格式不对, {0}'.format(encode_str))
+        logger.debug('鉴权失败：解密串格式不对, {0}'.format(encode_str))
         return '加密串异常'
 
     md5, timestamp = elements[0], int(elements[1])
-    logging.debug('从licence中获取到的信息：str={0}, md5={1}, time={2}'.format(
+    logger.debug('从licence中获取到的信息：str={0}, md5={1}, time={2}'.format(
         encode_str, md5, timestamp))
 
     # 检查时间戳
     local_timestamp = int(time.time())
     if local_timestamp > timestamp:
-        logging.debug('鉴权失败：timestamp，{0} < {1}'.format(
-            timestamp, local_timestamp))
+        logger.debug('鉴权失败：timestamp，{0} < {1}'.format(timestamp,
+                                                       local_timestamp))
         return '加密串已经过期'
     else:
         remain_time = timestamp - local_timestamp
@@ -143,50 +141,54 @@ def get_remain_time(encode_str) -> str:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logger.setLevel(logging.DEBUG)
+    BASIC_FORMAT = '%(asctime)s - %(levelname)s: %(message)s'
+    DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+    formatter = logging.Formatter(BASIC_FORMAT, DATE_FORMAT)
+    chlr = logging.StreamHandler()  # 输出到控制台的handler
+    chlr.setFormatter(formatter)
+    logger.addHandler(chlr)
 
     # 获取uuid
-    logging.debug(get_machine_uuid())
+    logger.debug(get_machine_uuid())
 
     # 获取日期
     cur_timestamp = int(time.time())
     end_timestamp = transform_date_to_timestamp(2021, 1, 30)
-    logging.debug('{0},{1}'.format(cur_timestamp, end_timestamp))
+    logger.debug('{0},{1}'.format(cur_timestamp, end_timestamp))
 
     # %% base64加密
     orig_str = '{0}-{1}'.format(get_machine_uuid(),
                                 transform_date_to_timestamp(2021, 1, 30))
     encoded_str = base64.b64encode(orig_str.encode('utf-8')).decode()
     decode_str = base64.b64decode(encoded_str.encode('utf-8')).decode()
-    logging.debug('{0},{1},{2}'.format(orig_str, encoded_str, decode_str))
+    logger.debug('{0},{1},{2}'.format(orig_str, encoded_str, decode_str))
 
     # md5加密
-    logging.debug('{0},{1}'.format(orig_str, get_md5(orig_str)))
+    logger.debug('{0},{1}'.format(orig_str, get_md5(orig_str)))
 
     # 测试鉴权结果
     licence = get_licence(get_machine_uuid(), 2020, 1, 30)
-    logging.debug('检查的licence: {0}，{1}'.format(licence,
-                                               check_license(licence)))
+    logger.debug('检查的licence: {0}，{1}'.format(licence, check_license(licence)))
 
     licence = get_licence('error_uuid', 2021, 1, 30)
-    logging.debug('检查的licence: {0}，{1}'.format(licence,
-                                               check_license(licence)))
+    logger.debug('检查的licence: {0}，{1}'.format(licence, check_license(licence)))
 
     licence = get_licence('14DDA9295650', 2022, 1, 1)  # 老飞的串
-    logging.debug('检查的licence（老飞）: {0}，{1}'.format(licence,
-                                                   check_license(licence)))
+    logger.debug('检查的licence（老飞）: {0}，{1}'.format(licence,
+                                                  check_license(licence)))
 
     licence = get_licence(get_machine_uuid(), 2021, 1, 30)
-    logging.debug('检查的licence: {0}，{1}'.format(licence,
-                                               check_license(licence)))  # 成功
-    logging.debug('剩余时间{0}，{1}'.format(licence, get_remain_time(licence)))
+    logger.debug('检查的licence: {0}，{1}'.format(licence,
+                                              check_license(licence)))  # 成功
+    logger.debug('剩余时间{0}，{1}'.format(licence, get_remain_time(licence)))
 
     licence = get_licence(get_machine_uuid(), 2022, 1, 1)
-    logging.debug('检查的licence: {0}，{1}'.format(licence,
-                                               check_license(licence)))  # 成功
-    logging.debug('剩余时间{0}，{1}'.format(licence, get_remain_time(licence)))
+    logger.debug('检查的licence: {0}，{1}'.format(licence,
+                                              check_license(licence)))  # 成功
+    logger.debug('剩余时间{0}，{1}'.format(licence, get_remain_time(licence)))
 
-    licence = get_licence(GENEAL_UUID, 2021, 1, 30)
-    logging.debug('检查的licence（通用一个月）: {0}，{1}'.format(
+    licence = get_licence(GENEAL_UUID, 2021, 6, 1)
+    logger.debug('检查的licence（通用一个月）: {0}，{1}'.format(
         licence, check_license(licence)))  # 成功
-    logging.debug('剩余时间{0}，{1}'.format(licence, get_remain_time(licence)))
+    logger.debug('剩余时间{0}，{1}'.format(licence, get_remain_time(licence)))

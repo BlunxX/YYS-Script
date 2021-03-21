@@ -106,5 +106,5 @@ class Yuhun(Autogui):
 if __name__ == '__main__':
     autogui = Yuhun()
     autogui.run('yuhun')
-    print(autogui.prepare_image_callback)
-    print(autogui.loop_image_callback)
+    logger.debug(str(autogui.prepare_image_callback))
+    logger.debug(str(autogui.loop_image_callback))

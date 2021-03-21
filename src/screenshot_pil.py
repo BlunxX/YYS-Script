@@ -4,11 +4,13 @@
 # %% 先加载对应的库
 import os
 import sys
+import logging
 from PIL import Image
 
 # %% 取出图片对应的截图文件，文件的目录结构
 cur_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
 IMAGES_PATH = os.path.join(cur_dir, 'screenshot')
+logger = logging.getLogger('kiddo')
 '''
 图片类型1：
     图片1.jpg
@@ -38,12 +40,13 @@ class Screenshot:
         try:
             return Image.open(image_path)
         except Exception as error:
-            print('打开图片失败，{0}, msg:{1}'.format(image_path, error))
+            logger.debug('打开图片失败，{0}, msg:{1}'.format(image_path, error))
             return None
 
     def read_section_jpg(self, section):
         if hasattr(self, section):
-            print('find_all_jpg: already has section:{0}'.format(section))
+            logger.debug(
+                'find_all_jpg: already has section:{0}'.format(section))
             return False
 
         setattr(self, section, {})  # 添加对应的副本分类的字典
@@ -96,19 +99,18 @@ class YysScreenshot(Screenshot):
 
 
 if __name__ == '__main__':
-    # screenshot = Screenshot()
-    # if screenshot.is_path_exists():
-    #     screenshot.read_section_jpg('yeyuanhuo')
-    #     print(getattr(screenshot, 'yeyuanhuo'))
+    screenshot = Screenshot()
+    if screenshot.is_path_exists():
+        screenshot.read_section_jpg('yeyuanhuo')
+        logger.debug(str(getattr(screenshot, 'yeyuanhuo')))
 
-    #     screenshot.read_section_jpg('yuling')
-    #     print(getattr(screenshot, 'yuling'))
+        screenshot.read_section_jpg('yuling')
+        logger.debug(str(getattr(screenshot, 'yuling')))
 
-    #     screenshot.read_section_jpg('general')
-    #     print(getattr(screenshot, 'general'))
+        screenshot.read_section_jpg('general')
+        logger.debug(str(getattr(screenshot, 'general')))
 
-    #     screenshot.get_section_jpg('yeyuanhuo', 'absent').show()
+        screenshot.get_section_jpg('yeyuanhuo', 'absent').show()
     screenshot = YysScreenshot('yeyuanhuo')
     jpgs = screenshot.get_jpgs(['absent', 'chi'])
     images = [x[1] for x in jpgs.items()]
-    print(None in images)

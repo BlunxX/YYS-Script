@@ -115,3 +115,6 @@ dmypy.json
 .pyre/
 src/new_tools.exe
 src/release/
+
+# 日志
+debug.log

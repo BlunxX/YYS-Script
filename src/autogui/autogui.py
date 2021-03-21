@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import pyautogui
+import logging
 from win_gui import Yys_windows_GUI
 from PyQt5.QtCore import pyqtSignal, QThread
 from random import randint, uniform
@@ -15,6 +16,7 @@ cur_dir = os.path.split(os.path.abspath(sys.argv[0]))[0]
 par_dir = os.path.split(os.path.abspath(cur_dir))[0]
 sys.path.append(cur_dir)  # 打包时会放在同一个目录下，所以如果是加父的目录是不行的
 sys.path.append(par_dir)
+logger = logging.getLogger('kiddo')
 
 # 使用opencv的图片匹配函数，如果不想用opencv可以使用 screenshot_pil.py 脚本
 from config import YysConfig
@@ -51,7 +53,7 @@ class Autogui(QThread):
         self.last_key = ''  # 上一次循环的key，用来检测死循环
 
     def init_config(self):
-        if self.config is not None:
+        if hasattr(self, 'config') and self.config is not None:
             self.display_msg('参数已经初始化完成')
             self.display_msg(str(self.config))
             return
@@ -66,88 +68,61 @@ class Autogui(QThread):
             ('drag_dis', 'int', 8),  # 狗粮拖动距离
             ('width', 'int', 8),
             ('height', 'int', 8),
+            ('licence', 'str', 'ABC'),
         ]
-        yuling_keys = [
+
+        section_keys = [
+            # 御灵相关
             ('loop_times', 'int', 200),
             ('type', 'str', 'dragon'),
             ('layer', 'int', 3),
-            ('attention', 'str', ''),
-        ]
-        break_keys = [
-            ('loop_times', 'int', 200),
-            ('attention', 'str', ''),
-        ]
-        chapter_keys = [
-            ('loop_times', 'int', 200),
-            ('players', 'int', 1),
-            ('captain', 'bool', True),
-            ('fodder_type', 'str', 'fodder'),
-            ('drag', 'int', 3),
-            ('attention', 'str', ''),
-        ]
-
-        yuhun_keys = [
-            ('loop_times', 'int', 200),
-            ('players', 'int', 2),
-            ('captain', 'bool', True),
-            ('attention', 'str', ''),
-        ]
-
-        wangzhe_keys = [
-            ('loop_times', 'int', 50),
-            ('attention', 'str', ''),
-        ]
-
-        upgrade_keys = [
-            ('loop_times', 'int', 50),
-            ('upgrade_stars', 'int', 2),
-            ('attention', 'str', ''),
-        ]
-
-        yeyuanhuo_keys = [
-            ('loop_times', 'int', 100),
-            ('fodder_type', 'str', 'fodder'),
-            ('drag', 'int', 5),
-            ('attention', 'str', ''),
-            ('change_fodder', 'bool', True),
-        ]
-
-        rilun_keys = [
-            ('loop_times', 'int', 100),
-            ('fodder_type', 'str', 'fodder'),
-            ('drag', 'int', 5),
-            ('attention', 'str', ''),
-            ('change_fodder', 'bool', True),
-        ]
-
-        pattern_keys = [
-            ('loop_times', 'int', 100),
-            ('attention', 'str', ''),
             ('winname', 'str', 'None'),
+
+            # 组队相关
+            ('fodder_type', 'str', 'fodder'),
+            ('drag', 'int', 5),
+            ('change_fodder', 'bool', True),
+            ('captain', 'bool', True),
+            ('players', 'int', 2),
+
+            # 升级狗粮
+            ('upgrade_stars', 'int', 2),
+
+            # 点击模式
             ('prepare_keys', 'str', ''),
             ('loop_keys', 'str', ''),
         ]
+        '''设置自动读取配置，配置类型参照keys的类型，因为要简化掉，所以最终数据会有冗余'''
+        sections = yys_config.get_sections()
+        for section in sections:
+            if section == 'general':
+                yys_config.read_one_type_config(section, general_keys)
+            else:
+                yys_config.read_one_type_config(section, section_keys)
+            logger.debug(str(getattr(yys_config, section)))
 
-        yys_config.read_one_type_config('general', general_keys)
-        # print(getattr(yys_config, 'general'))
-        yys_config.read_one_type_config('yuling', yuling_keys)
-        # print(getattr(yys_config, 'yuling'))
-        yys_config.read_one_type_config('yys_break', break_keys)
-        # print(getattr(yys_config, 'yys_break'))
-        yys_config.read_one_type_config('chapter', chapter_keys)
-        # print(getattr(yys_config, 'chapter'))
-        yys_config.read_one_type_config('yuhun', yuhun_keys)
-        # print(getattr(yys_config, 'yuhun'))
-        yys_config.read_one_type_config('upgrade', upgrade_keys)
-        # print(getattr(yys_config, 'upgrade'))
-        yys_config.read_one_type_config('yeyuanhuo', yeyuanhuo_keys)
-        # print(getattr(yys_config, 'yeyuanhuo'))
-        yys_config.read_one_type_config('rilun', rilun_keys)
-        # print(getattr(yys_config, 'rilun'))
-        yys_config.read_one_type_config('wangzhe', wangzhe_keys)
-        # print(getattr(yys_config, 'wangzhe'))
-        yys_config.read_one_type_config('pattern', pattern_keys)
-        # print(getattr(yys_config, 'pattern'))
+        self.init_logging_level()
+
+    def init_logging_level(self):
+        configs = self.config.general
+        level = configs.get('log_level', 'INFO')
+        if level == 'NONE':
+            return
+        elif level == 'INFO':
+            logger.setLevel(logging.INFO)
+        else:
+            logger.setLevel(logging.DEBUG)
+
+        # BASIC_FORMAT= '%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
+        BASIC_FORMAT = '%(asctime)s - %(levelname)s: %(message)s'
+        DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+        formatter = logging.Formatter(BASIC_FORMAT, DATE_FORMAT)
+        chlr = logging.StreamHandler()  # 输出到控制台的handler
+        chlr.setFormatter(formatter)
+        fhlr = logging.FileHandler('debug.log', 'w')  # 输出到文件的handler
+        fhlr.setFormatter(formatter)
+        logger.addHandler(chlr)
+        logger.addHandler(fhlr)
 
     def init_screenshot(self):
         self.screenshot = YysScreenshot('')
@@ -196,7 +171,7 @@ class Autogui(QThread):
                 self.cur_loop_times += 1
                 loc = self.locate_im(callback.image, im_yys)
                 if loc is None:
-                    print(callback.key, ' not match')
+                    logger.debug('{0} not match'.format(callback.key))
                     continue
                 self.cur_key = callback.key
                 callback.callback(loc)  # 执行对应的回调
@@ -234,12 +209,12 @@ class Autogui(QThread):
 
     def raise_msg(self, msg):
         '''输出日志到框内，且弹窗提醒错误'''
-        print(msg)
+        logger.warn(msg)
         self.sendmsg.emit(msg, 'Error')
 
     def display_msg(self, msg):
         '''输出日志到框内'''
-        print(msg)
+        logger.info(msg)
         self.sendmsg.emit(msg, 'Info')
 
     def get_window_handler(self):
